@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+    <title>Monitoreo(V)</title>
+
+    <!-- include Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
+    <!-- include highchartsjs to build the charts-->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <!-- include to use jquery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!--include icons from fontawesome-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <!-- include Gauges Javascript library-->
+    <script src="https://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/all/gauge.min.js"></script>
+    <!--reference for favicon-->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="32x32">
+    <!--reference a stylesheet-->
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body>
+    <!--BARRA SUPERIOR-->
+    <div class="topnav">
+      <h1>Sensor ZMPT101B <i class="fas fa-clipboard-list"></i></h1>
+    </div>
+    <!--BARRA DE AUTENTICACIÓN (DETALLES DE USUARIO/BOTÓN CERRAR SESIÓN)-->
+    <div id="authentication-bar" style="display: none;">
+      <p><span id="authentication-status">Usuario Conectado</span>
+        <span id="user-details">USEREMAIL</span>
+        <button href="/" type="button" class="deletebtn"<a href="/" id="logout-link">cerrar sesión</a></button>
+      </p>
+    </div>
+    <!--FORMULARIO DE INICIO DE SESIÓN-->
+    <form id="login-form" style="display: none;">
+      <div class="form-elements-container">
+        <label for="input-email"><b>Email</b></label>
+        <input type="text" placeholder="Ingrese su Correo" id="input-email" required>
+        <label for="input-password"><b>Password</b></label>
+        <input type="password" placeholder="Ingrese su Contraseña" id="input-password" required>
+        <button type="submit" id="login-button">Login</button>
+        <p id="error-message" style="color:red;"></p>
+      </div>
+    </form>
+    <!--CONTENIDO (LECTURAS DEL SENSOR)-->
+    <div class="content-sign-in" id="content-sign-in" style="display: none;">
+      <!--ÚLTIMA ACTUALIZACIÓN-->
+      <p><span class ="date-time">Última actualización: <span id="lastUpdate"></span></span></p>
+      <p>
+        Cards: <input type="checkbox" id="cards-checkbox" name="cards-checkbox" checked>
+        Medidor: <input type="checkbox" id="gauges-checkbox" name="gauges-checkbox" checked>
+        Gráficos: <input type="checkbox" id="charts-checkbox" name="charts-checkbox" unchecked>
+      </p>
+      <div id="cards-div">
+        <div class="cards">
+          <!--VOLTAJE-->
+          <div class="card">
+            <p><i class="fas fa-lightbulb"style="color:#059e8a;"></i> VOLTAJE</p>
+            <p><span class="reading"><span id="volt"></span> V</span></p>
+          </div>
+        </div>
+      </div>
+      <!--MEDIDORES-->
+      <div id ="gauges-div">
+        <div class="cards">
+          <!--Voltaje-->
+          <div class="card">
+            <canvas id="gauge-voltage"></canvas>
+          </div>
+        </div>
+      </div>
+      <!--GRÁFICOS-->
+       <div id="charts-div" style="display:none">
+      <!--ESTABLECER NÚMERO DE LECTURAS - CAMPO DE ENTRADA-->
+        <div>
+          <p> Número de lecturas: <input type="number" id="charts-range"></p>
+        </div>
+        <!--voltaje-CHART-->
+        <div class="cards">
+          <div class="card">
+            <p><i class="fas fa-lightbulb" style="color:#fccf06;"></i> --Voltaje-CHART--</p>
+            <div id="chart-volt" class="chart-container"></div>
+          </div>
+        </div>
+      </div>
+      <!--BOTONES PARA MANEJO DE DATOS-->
+      <p>
+      <!--botón ver datos-->
+        <button id="view-data-button">Ver todos los datos</button>
+      <!--botón Ocultar datos-->
+        <button id="hide-data-button" style= "display:none;">Ocultar datos</button>
+      <!--botón Borrar datos-->
+        <button id="delete-button" class="deletebtn">Borrar Datos</button>
+      </p>
+      <!--Modal para borrar datos-->
+      <div id="delete-modal" class="modal" sytle="display:none">
+        <span onclick = "document.getElementById('delete-modal').style.display='none'" class="close" title="Close Modal">×</span>
+        <form id= "delete-data-form" class="modal-content" action="/">
+          <div class="container">
+            <h1>Borrar Datos</h1>
+             <p>¿Está seguro de que desea eliminar todos los datos de la base de datos?</p>
+            <div class="clearfix">
+              <button type="button" onclick="document.getElementById('delete-modal').style.display='none'" class="cancelbtn">Cancelar</button>
+              <button type="submit" onclick="document.getElementById('delete-modal').style.display='none'" class="deletebtn">Borrar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <!--TABLA CON TODOS LOS DATOS-->
+      <div class ="cards">
+        <div class="card" id="table-container" style= "display:none;">
+          <table id="readings-table">
+            <tr id="theader">
+              <th>Marca de tiempo</th>
+              <th>Voltaje V</th>
+            </tr>
+            <tbody id="tbody">
+            </tbody>
+          </table>
+          <p><button id="load-data" style= "display:none;">Mas resultados...</button></p>
+          <div class="container">
+            <h2>DESCARGA</h2>
+            <button onclick="export2csv()">CSV</button>
+            <button id="pdfout">PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <img src="elec.gif" alt="electrico" style="width:128px;height:128px;">
+    <!--INCLUYE ARCHIVOS JS-->
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/charts-definition.js"></script>
+    <script src="scripts/gauges-definition.js"></script>
+    <script src="scripts/index.js"></script>
+    <script src="scripts/data_table.js"></script>
+    <script src="scripts/tablePDF.js"></script>
+    <script src="scripts/key.js"></script>
+    <!--HTML PDF-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js" integrity="sha384-NaWTHo/8YCBYJ59830LTz/P4aQZK1sS0SneOgAvhsIl3zBu8r9RevNg5lHCHAuQ/" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-rc.1/dist/html2canvas.min.js"></script>
+    <!--MENU HAICHARD-->
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+  </body>
+</html>
